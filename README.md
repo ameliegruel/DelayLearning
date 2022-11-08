@@ -4,6 +4,7 @@ Implementation of different mechanisms of delay learning, using SNN and applied 
 Libraries used: 
 - ```tonic```: to handle event based data
 - ```PyNN```: to implement spiking neural networks
+- ```EvData```: to handle event based data - from the [corresponding github repository](https://github.com/amygruel/EvData)
 
 ## Organisation of the repository
 - ```Nadafian/```: this directory extends a previous implementation of the work published in [[1]](#1). The first implementation was produced by Hugo Bulzomi during his internship at I3S / CNRS, UCA in Fall 2021 and can be found [on this github repertory](https://github.com/HugoBulzomi/SNN_Delay_Learning). The main improvement in the current implementation is the computation time: 6 minutes to simulate the network with two convolution layers during 1 second, versus 43 minutes previously. 
