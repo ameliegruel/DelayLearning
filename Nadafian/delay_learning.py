@@ -3,7 +3,8 @@ import itertools as it
 from pyNN.utility import get_simulator, init_logging, normalized_filename
 from quantities import ms
 from random import randint
-from plots import *
+from pyNN.utility.plotting import Figure, Panel
+import matplotlib.pyplot as plt
 from datetime import datetime as dt
 import neo
 import numpy as np
@@ -190,6 +191,8 @@ class LastSpikeRecorder(object):
         self.interval = sampling_interval
         self.population = pop
         self.global_spikes = [[] for _ in range(self.population.size)]
+        self.annotations = {}
+        self.final_spikes = []
 
         if type(self.population) != list:
             self._spikes = np.ones(self.population.size) * (-1)
@@ -199,11 +202,16 @@ class LastSpikeRecorder(object):
     def __call__(self, t):
         if t > 0:
             if type(self.population) != list:
+                population_spikes = self.population.get_data("spikes", clear=True).segments[0].spiketrains
                 self._spikes = map(
                     lambda x: x[-1].item() if len(x) > 0 else -1, 
-                    self.population.get_data("spikes", clear=True).segments[0].spiketrains
+                    population_spikes
                 )
                 self._spikes = np.fromiter(self._spikes, dtype=float)
+
+                if t == 1:
+                    for n, neuron_spikes in enumerate(population_spikes):
+                        self.annotations[n] = neuron_spikes.annotations
 
             else:
                 self._spikes = []
@@ -224,7 +232,9 @@ class LastSpikeRecorder(object):
         return t+self.interval
 
     def get_spikes(self):
-        return self.global_spikes
+        for n, s in enumerate(self.global_spikes):
+            self.final_spikes.append( neo.core.spiketrain.SpikeTrain(s*ms, t_stop=time_data, **self.annotations[n]) )
+        return self.final_spikes
 
 class WeightDelayRecorder(object):
 
@@ -657,32 +667,29 @@ if options.plot_figure :
         extension = '_4directions'
         title = "Delay learning - 4 directions"
     
-    Input_data = Input_spikes.get_spikes()
-    Conv1_data = Conv1_spikes.get_spikes()
-    Conv2_data = Conv2_spikes.get_spikes()
-
-    print(len(Input_data), len(Conv1_data), len(Conv2_data))
-    print(Input_data)
-    print(Conv1_data)
-    print(Conv2_data)
+    Conv1_data = Conv1.get_data().segments[0]
+    Conv2_data = Conv2.get_data().segments[0]
+    Input_spikes = Input_spikes.get_spikes()
+    Conv1_spikes = Conv1_spikes.get_spikes()
+    Conv2_spikes = Conv2_spikes.get_spikes()
     
     figure_filename = normalized_filename("Results", "delay_learning"+extension, "png", options.simulator)
 
-    figure_info = {
-        "plot1": {
-            "data": Input_data, "xlabel": "Input spikes", "yticks":True, "xlim":(0, time_data), "ylim":(0, Input.size)
-        },
-        "plot2": {
-            "data": Conv1_data, "xlabel": "Conv1 spikes", "yticks":True, "xlim":(0, time_data), "ylim":(0, Conv1.size)
-        },
-        "plot3": {
-            "data": Conv2_data, "xlabel": "Conv1 spikes", "yticks":True, "xlim":(0, time_data), "ylim":(0, Conv2.size)
-        },
-        "figure": {
-            "title": title, "annotations":"Simulated with "+ options.simulator.upper(), "save":True, "saveas": figure_filename
-        }
-    }
+    Figure(
+        # raster plot of the event inputs spike times
+        Panel(Input_spikes, xlabel="Input spikes", yticks=True, markersize=0.2, xlim=(0, time_data), ylim=(0, Input.size)),
+        # raster plot of the Reaction neurons spike times
+        Panel(Conv1_spikes, xlabel="Conv1 spikes", yticks=True, markersize=0.2, xlim=(0, time_data), ylim=(0, Conv1.size)),
+        # raster plot of the Output1 neurons spike times
+        Panel(Conv2_spikes, xlabel="Conv2 spikes", yticks=True, markersize=0.2, xlim=(0, time_data), ylim=(0, Conv2.size)),
 
-    Figure(figure_info)
+        # membrane potential of the Conv1 neurons
+        Panel(Conv1_data.filter(name='v')[0], xlabel="Membrane potential (mV)\nConv2 layer", yticks=True, xlim=(0, time_data), linewidth=0.2, legend=False),
+        # membrane potential of the Conv2 neurons
+        Panel(Conv2_data.filter(name='v')[0], xlabel="Membrane potential (mV)\nConv2 layer", yticks=True, xlim=(0, time_data), linewidth=0.2, legend=False),
 
+        title=title,
+        annotations="Simulated with "+ options.simulator.upper()
+    ).save(figure_filename)
     print("Figures correctly saved as", figure_filename)
+    plt.show()
