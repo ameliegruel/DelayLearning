@@ -10,7 +10,7 @@ Libraries used:
 
 ## Organisation of the repository
 - **Nadafian/**: this directory extends a previous implementation of the work published in [[1]](#1). The first implementation was produced by Hugo Bulzomi during his internship at I3S / CNRS, UCA in Fall 2021 and can be found [on this github repertory](https://github.com/HugoBulzomi/SNN_Delay_Learning). The main improvement in the current implementation is the computation time: 6 minutes to simulate the network with two convolution layers during 1 second, versus 43 minutes previously. 
-  - **delay_learning.py**: main Python script, to be run as ```python3 delay_learning.py nest --plot-figure --two```
+  - **delay_learning.py**: main Python script, to be run as ```python3 delay_learning.py nest --nb-convolution desired_number_of_convolutions --t desired_simulation_length --metrics --save --plot-figure``` (see details in option ```-h```)
 
 ## References
 <a id="1">[1]</a> 
